@@ -1,0 +1,9 @@
+server/devConfig.json
+server/node_modules/
+client/node_modules/
+server/pnpm-lock.yaml
+server/package-lock.json
+client/pnpm-lock.yaml
+client/package-lock.json
+client/dist/
+server/dist
