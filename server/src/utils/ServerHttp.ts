@@ -18,7 +18,7 @@ export class ServerHttp {
     this.server.use(urlencoded({ extended: true }));
     this.server.use(json());
     this.server.use((req: Request, res: Response, next: NextFunction) => {
-      console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
+      console.log(`${new Date().toISOString()} ${req.ip?.toString()} ${req.method} ${req.url}`);
       for (const name in headers) res.set(name, headers[name]);
       next();
     });
