@@ -10,6 +10,7 @@ export class Db {
       user: config.db.user,
       database: config.db.database,
       password: config.db.password,
+      namedPlaceholders: true,
     });
   }
 
