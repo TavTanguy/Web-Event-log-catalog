@@ -7,3 +7,6 @@ client/pnpm-lock.yaml
 client/package-lock.json
 client/dist/
 server/dist
+server/.vscode/
+client/.vscode/
+.vscode/*

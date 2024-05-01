@@ -22,7 +22,13 @@ export class ServerHttp {
       for (const name in headers) res.set(name, headers[name]);
       next();
     });
-    this.server.use("/doc", swaggerUI.serve, swaggerUI.setup(swagger));
+    this.server.use(
+      "/doc",
+      swaggerUI.serve,
+      swaggerUI.setup(swagger, {
+        explorer: true,
+      })
+    );
 
     this.router = Router();
   }
