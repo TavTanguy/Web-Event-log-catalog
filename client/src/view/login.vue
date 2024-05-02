@@ -24,6 +24,28 @@ function PasswordRules(){
   return "Password must be at least 7 characters.";
 }
 
+// Timeout
+const timer=ref()
+const timer2= ref()
+
+function Timertoken() {
+
+timer.value = setTimeout(() => {
+
+  // Change the value of the object after 10 seconds
+
+  localStorage.removeItem("token");
+  token.value = ""
+  
+
+}, 600000)
+
+
+
+}
+
+const NoMatch=ref(false)
+
 async function Login() {
   
     
@@ -40,10 +62,11 @@ async function Login() {
   if (resJson.type == "success"){
     token.value=resJson.res.token
     localStorage.setItem("token",token.value);
+    Timertoken();
     router.push('/');
-
+   
   }
-  
+  else { NoMatch.value=true } 
 } 
 
 
@@ -78,7 +101,7 @@ async function Login() {
             ></v-text-field>
 
          
-            <v-btn class="mt-2" type="submit" block
+            <v-btn @click="Login" class="mt-2" type="submit" block
               >Login</v-btn>
 
           </v-form>
@@ -87,5 +110,17 @@ async function Login() {
         </v-sheet>
         
       </v-card>
+      <v-dialog
+      v-model="NoMatch"
+      max-width="300"
+      transition="dialog-transition"
+    >
+      <v-card>
+        <v-card-title primary-title>
+          Wrong informations error
+          <v-icon color="red" icon="mdi-alert-circle" size="small"></v-icon>
+        </v-card-title>
+      </v-card>
+    </v-dialog>
     </div>
 </template>

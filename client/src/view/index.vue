@@ -3,10 +3,6 @@ import { nextTick, ref, watch } from "vue";
 import Plotly from "plotly.js";
 import { file } from "@babel/types";
 
-
-
-
-
 //datasets
 
 const items = ref([]);
@@ -189,79 +185,96 @@ function openDialog2(attributeId: number, nameAttribute: string) {
 }
 
 // Dialogue import
-const dialogimport= ref(false)
+const dialogimport = ref(false);
 function openImport() {
-  dialogimport.value=true;
+  dialogimport.value = true;
 }
 
 // Disconnect
 
 function Disconnect() {
-  token.value=null
-  localStorage.removeItem("token")
-
-
+  token.value = null;
+  localStorage.removeItem("token");
 }
-
 
 const token = ref(localStorage.getItem("token"));
 
-const DatasetName = ref("")
+const DatasetName = ref("");
 
-const Lglobal = ref ("")
-const filename= ref(undefined as Array<File> | undefined)
+const Lglobal = ref("");
+const filename = ref(undefined as Array<File> | undefined);
 
+const dialogerrorF= ref(false)
+const error= ref(false)
 
 function getFileFormat() {
-  if (filename.value== undefined){
-    return ""
+  if (filename.value == undefined) {
+    return "";
   }
-  const extensions = filename.value[0].name.split('.');
+
+  const extensions = filename.value[0].name.split(".");
+
+  if (!["xes", "ocel"].includes(extensions[1])) {
+    error.value=true
+    dialogerrorF.value = true;
+    return "";
+  }
+  else { error.value=false}
 
   return extensions[1];
-
 }
 
-function updateChosenformat(){
-  chosenformat.value = "." + getFileFormat()
+function updateChosenformat() {
+  chosenformat.value = "." + getFileFormat();
 }
 
-const chosenformat = ref("")
+const chosenformat = ref("");
 
-
-
-async function UploadData (){
-
+const dialogsuccess = ref(false);
+const dialogerror =ref (false)
+const UploadError = ref ("")
+async function UploadData() {
   const formData = new FormData();
-  if (filename.value==undefined){
-    return 
+  if (filename.value == undefined) {
+    return;
   }
-      formData.append('file', filename.value[0]);
-      formData.append('name', DatasetName.value);
-      formData.append('linkGlobal', Lglobal.value);
-      
-      const options={
-        headers:{Authorization: `Bearer ${token.value}` },
-        method: "POST",
-        body: formData
-      }
+  formData.append("file", filename.value[0]);
+  formData.append("name", DatasetName.value);
+  formData.append("linkGlobal", Lglobal.value);
 
-      const res= await fetch("https://events-logs.loca.lt/v1/dataset/",options)
-      const resJson = await res.json();
+  const options = {
+    headers: { Authorization: `Bearer ${token.value}` },
+    method: "POST",
+    body: formData,
+  };
+  
+  if ( DatasetName.value!=="" && Lglobal.value!==""){
+  const res = await fetch("https://events-logs.loca.lt/v1/dataset/", options);
+
+  const resJson = await res.json();
+  if(resJson.type == "success")
+  dialogsuccess.value = true;
+  else {
+    UploadError.value=resJson.message
+    dialogerror.value=true;
+  }
+  
 }
 
+  
+}
 </script>
 
 <template>
   <div>
     <!-- Login -->
     <v-container>
-
       <v-btn v-if="!token" density="comfortable"
         ><router-link to="/create">
           <v-icon color="primary" icon="mdi-account" size="large"></v-icon>
           Register</router-link
-        ></v-btn>
+        ></v-btn
+      >
       <v-btn v-if="!token" density="comfortable"
         ><router-link to="/login">
           <v-icon color="primary" icon="mdi-account" size="large"></v-icon>
@@ -278,7 +291,7 @@ async function UploadData (){
         <v-icon color="primary" icon="mdi-upload" size="large"></v-icon>
         Import</v-btn
       >
- <!-- Upload -->
+      <!-- Upload -->
       <v-dialog
         v-model="dialogimport"
         max-width="90vw"
@@ -288,7 +301,6 @@ async function UploadData (){
             {{ "Upload dataset" }}
           </v-card-title>
           <div class="d-flex">
-            
             <v-file-input
               v-model="filename"
               @update:modelValue="updateChosenformat"
@@ -296,15 +308,14 @@ async function UploadData (){
               accept=".xes, .ocel"
               variant="outlined"
             ></v-file-input>
-            
-            <v-select 
-            v-model="chosenformat"
+
+            <v-select
+              v-model="chosenformat"
               label="Select format"
               :items="['.xes', '.ocel']"
               variant="outlined"
             ></v-select>
           </div>
-          
 
           <v-sheet class="mx-auto" width="300">
             <v-form fast-fail @submit.prevent>
@@ -313,19 +324,65 @@ async function UploadData (){
                 label="Dataset Name"
               ></v-text-field>
 
-
               <v-text-field
                 v-model="Lglobal"
                 label="Link global"
               ></v-text-field>
 
-              <v-btn @click="UploadData" class="mt-2" type="submit" block>Upload</v-btn>
+              <v-btn @click="UploadData" class="mt-2" type="submit" block
+                >Upload</v-btn
+              >
             </v-form>
           </v-sheet>
         </v-card>
       </v-dialog>
     </v-container>
-    <h1 style="text-align: center">EVENT LOGS</h1>
+
+    <v-dialog
+      v-model="dialogsuccess"
+      max-width="300"
+      transition="dialog-transition"
+    >
+      <v-card>
+        <v-card-title primary-title>
+          File Succesfuly Uploaded
+          <v-icon color="primary" icon="mdi-check-circle" size="small"></v-icon>
+        </v-card-title>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog
+      v-model="dialogerrorF"
+      max-width="300"
+      transition="dialog-transition"
+    >
+      <v-card>
+        <v-card-title primary-title>
+          Wrong format error
+          <v-icon color="red" icon="mdi-alert-circle" size="small"></v-icon>
+        </v-card-title>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog
+      v-model="dialogerror"
+      max-width="300"
+      transition="dialog-transition"
+    >
+      <v-card>
+        <v-card-title primary-title>
+          {{UploadError}}
+          <v-icon color="red" icon="mdi-alert-circle" size="small"></v-icon>
+        </v-card-title>
+      </v-card>
+    </v-dialog>
+
+
+    <v-card style="text-align: center; font-family: Helvetica">
+      <v-card-title primary-title
+        ><strong>EVENT LOGS CATALOG</strong></v-card-title
+      >
+    </v-card>
 
     <div class="d-flex">
       <v-text-field
