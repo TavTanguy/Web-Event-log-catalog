@@ -277,13 +277,13 @@ async function UploadData() {
       >
       <v-btn v-if="!token" density="comfortable"
         ><router-link to="/login">
-          <v-icon color="primary" icon="mdi-account" size="large"></v-icon>
+          <v-icon color="primary" icon="mdi-login" size="large"></v-icon>
           Log in</router-link
         ></v-btn
       >
       <v-btn v-else @click="Disconnect" density="comfortable"
         ><router-link to="/">
-          <v-icon color="primary" icon="mdi-account" size="large"></v-icon>
+          <v-icon color="primary" icon="mdi-logout" size="large"></v-icon>
           Log out</router-link
         ></v-btn
       >
@@ -380,7 +380,7 @@ async function UploadData() {
 
     <v-card style="text-align: center; font-family: Helvetica">
       <v-card-title primary-title
-        ><strong>EVENT LOGS CATALOG</strong></v-card-title
+        ><strong>EVENTLOG EXPLORER</strong></v-card-title
       >
     </v-card>
 
