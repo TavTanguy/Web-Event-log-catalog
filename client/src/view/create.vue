@@ -33,7 +33,7 @@ function ConfirmPasswordRules() {
 const Message = ref("");
 async function CreateAccount() {
   if (Username.value !== "" && Email.value !== "" && Password.value !== "") {
-    const res = await fetch(`http://${URL}/v1/user`, {
+    const res = await fetch(`http://${URL.value}/v1/user`, {
       method: "POST",
       body: new URLSearchParams({
         username: Username.value,

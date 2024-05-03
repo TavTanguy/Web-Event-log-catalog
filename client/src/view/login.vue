@@ -50,7 +50,7 @@ const NoMatch=ref(false)
 async function Login() {
   
     
-  const res = await fetch(`http://${URL}/v1/user/login?` + new URLSearchParams({
+  const res = await fetch(`http://${URL.value}/v1/user/login?` + new URLSearchParams({
         'username': Username.value,
         'password': Password.value,
 
