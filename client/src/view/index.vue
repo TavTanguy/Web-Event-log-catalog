@@ -3,6 +3,7 @@ import { nextTick, ref, watch } from "vue";
 import Plotly from "plotly.js";
 import { file } from "@babel/types";
 
+const URL= ref("events-logs.loca.lt")
 //datasets
 
 const items = ref([]);
@@ -67,7 +68,7 @@ async function updateData({ page, sortBy }) {
   if (sortBy.length == 0) sortBy = [{ key: "", order: "ASC" }];
 
   const res = await fetch(
-    "https://91.107.192.39/v1/dataset?" +
+    `http://${URL}/v1/dataset?` +
       new URLSearchParams({
         limit: itemsPerPage.value,
         from: ((page - 1) * Number(itemsPerPage.value) + 1).toString(),
@@ -97,7 +98,7 @@ async function updateAttribute({ page, sortBy }, limitAll = false) {
   if (sortBy.length == 0) sortBy = [{ key: "", order: "ASC" }];
 
   const res = await fetch(
-    `https://91.107.192.39/v1/dataset/${currentDatasetId.value}/attribute?` +
+    `http://${URL}/v1/dataset/${currentDatasetId.value}/attribute?` +
       new URLSearchParams({
         limit: limitAll ? "-1" : itemsPerPage2.value,
         from: ((page - 1) * Number(itemsPerPage2.value) + 1).toString(),
@@ -124,7 +125,7 @@ async function updateValue({ page, sortBy }, limitAll = false) {
   if (sortBy.length == 0) sortBy = [{ key: "", order: "ASC" }];
 
   const res = await fetch(
-    `https://91.107.192.39/v1/dataset/${currentDatasetId.value}/attribute/${currentAttributeId.value}/values?` +
+    `http://${URL}/v1/dataset/${currentDatasetId.value}/attribute/${currentAttributeId.value}/values?` +
       new URLSearchParams({
         limit: limitAll ? "-1" : itemsPerPage3.value,
         from: ((page - 1) * Number(itemsPerPage3.value) + 1).toString(),
@@ -249,7 +250,7 @@ async function UploadData() {
   };
   
   if ( DatasetName.value!=="" && Lglobal.value!==""){
-  const res = await fetch("https://91.107.192.39/v1/dataset/", options);
+  const res = await fetch(`http://${URL}/v1/dataset/`, options);
 
   const resJson = await res.json();
   if(resJson.type == "success")

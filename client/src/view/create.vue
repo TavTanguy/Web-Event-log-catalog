@@ -2,6 +2,7 @@
 import { ref } from "vue";
 import router from "../router";
 
+const URL= ref("events-logs.loca.lt")
 // Script rules of forms
 const Username = ref("");
 function UsernameRules() {
@@ -32,7 +33,7 @@ function ConfirmPasswordRules() {
 const Message = ref("");
 async function CreateAccount() {
   if (Username.value !== "" && Email.value !== "" && Password.value !== "") {
-    const res = await fetch("https://91.107.192.39/v1/user", {
+    const res = await fetch(`http://${URL}/v1/user`, {
       method: "POST",
       body: new URLSearchParams({
         username: Username.value,

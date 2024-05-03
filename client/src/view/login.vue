@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import router from "../router"
 
+const URL= ref("events-logs.loca.lt")
 // Script rules of forms
 const Username = ref("")
 const show1 = ref(false)
@@ -49,7 +50,7 @@ const NoMatch=ref(false)
 async function Login() {
   
     
-  const res = await fetch("https://91.107.192.39/v1/user/login?" + new URLSearchParams({
+  const res = await fetch(`http://${URL}/v1/user/login?` + new URLSearchParams({
         'username': Username.value,
         'password': Password.value,
 
