@@ -8,6 +8,7 @@ export class Db {
     Db.instance = await mysql.createConnection({
       host: config.db.host,
       user: config.db.user,
+      port: config.db.port,
       database: config.db.database,
       password: config.db.password,
       namedPlaceholders: true,
