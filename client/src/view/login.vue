@@ -49,7 +49,7 @@ const NoMatch=ref(false)
 async function Login() {
   
     
-  const res = await fetch("https://events-logs.loca.lt/v1/user/login?" + new URLSearchParams({
+  const res = await fetch("https://91.107.192.39/v1/user/login?" + new URLSearchParams({
         'username': Username.value,
         'password': Password.value,
 
