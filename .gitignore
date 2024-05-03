@@ -1,4 +1,3 @@
-server/devConfig.json
 server/node_modules/
 client/node_modules/
 server/pnpm-lock.yaml
@@ -9,4 +8,11 @@ client/dist/
 server/dist
 server/.vscode/
 client/.vscode/
-.vscode/*
+.vscode/
+server/datasets/*
+db/
+*.sql
+docker-compose.yaml
+configs/
+__pycache__/
+datasets/

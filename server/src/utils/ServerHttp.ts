@@ -8,6 +8,7 @@ import { ValidationError } from "yup";
 
 import swaggerUI from "swagger-ui-express";
 import swagger from "../swagger.json";
+import { MulterError } from "multer";
 
 export class ServerHttp {
   private server: ExpressWithAsync;
@@ -42,6 +43,7 @@ export class ServerHttp {
 
     this.server.use((err: Error, req: Request, res: Response, next: NextFunction) => {
       if (err instanceof ValidationError) err = new ErrorApi("ErrorApi-2.0", 400, err.message, false);
+      if (err instanceof MulterError) err = new ErrorApi("ErrorApi-2.0", 400, err.message, false);
       const errorApi = err instanceof ErrorApi ? err : ErrorApi.unkownError(0);
       errorApi.response(res);
       if (process.env.NODE_ENV !== "production" || !(err instanceof ErrorApi)) console.error(err);
