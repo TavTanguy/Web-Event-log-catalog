@@ -30,6 +30,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+      stream: 'stream-browserify'
     },
     extensions: [
       '.js',
@@ -40,6 +41,13 @@ export default defineConfig({
       '.tsx',
       '.vue',
     ],
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      define: {
+        global: 'globalThis'
+      }
+    }
   },
   server: {
     port: 3000,
