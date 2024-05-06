@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import router from "../router"
 
-const URL= ref("events-logs.loca.lt")
+const URL= ref("91.107.192.39")
 // Script rules of forms
 const Username = ref("")
 const show1 = ref(false)

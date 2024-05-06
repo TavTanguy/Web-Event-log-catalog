@@ -3,7 +3,7 @@ import { nextTick, ref, watch } from "vue";
 import Plotly from "plotly.js";
 import { file } from "@babel/types";
 
-const URL= ref("events-logs.loca.lt")
+const URL = ref("91.107.192.39");
 //datasets
 
 const items = ref([]);
@@ -35,6 +35,7 @@ const maxCardinality = ref("251734");
 
 const headers2 = ref([
   { title: "type", key: "type" },
+  { title: "value_type", key: "value_type" },
   { title: "name", key: "name" },
   { title: "cardinality", key: "cardinality" },
   { title: "details", key: "details", sortable: false },
@@ -141,8 +142,9 @@ async function updateValue({ page, sortBy }, limitAll = false) {
 }
 
 // Graph Attributes
+const typegraph = ref("bar");
 async function openGraph() {
-  dialogGraph.value = true;
+  dialogGraph.value = !dialogGraph.value;
   await updateAttribute(lastParams2, true);
 
   nextTick(() => {
@@ -150,14 +152,23 @@ async function openGraph() {
     const cards = items2.value.map((item: any) => item.cardinality);
     const sumCard = cards.reduce((acc, val) => acc + val);
     const values = cards.map((card) => (100 * card) / sumCard);
-    Plotly.newPlot("gd", [{ type: "pie", labels, values }]);
+    if (typegraph.value == "bar") {
+      Plotly.newPlot("gd", [{ type: typegraph.value, x: labels, y: values }]);
+    } 
+    else if ( typegraph.value=="markers") {
+      const values = cards.map((card) => card);
+      Plotly.newPlot("gd", [{ mode: typegraph.value,x: labels, y: values }]);
+    }
+    else {
+      Plotly.newPlot("gd", [{ type: "pie", labels, values }]);
+    }
   });
 }
 
 // Graph Values
 
 async function openGraph2() {
-  dialogGraph2.value = true;
+  dialogGraph2.value = !dialogGraph2.value;
   await updateValue(lastParams3, true);
 
   nextTick(() => {
@@ -165,13 +176,25 @@ async function openGraph2() {
     const cards = items3.value.map((item: any) => item.occur);
     const sumCard = cards.reduce((acc, val) => acc + val);
     const values = cards.map((card) => (100 * card) / sumCard);
-    Plotly.newPlot("gd", [{ type: "pie", labels, values }]);
+
+    if (typegraph.value == "bar") {
+      const values = cards.map((card) => card);
+      Plotly.newPlot("gd", [{ type: typegraph.value, x: labels, y: values }]);
+    } 
+    else if ( typegraph.value=="markers") {
+      const values = cards.map((card) => card);
+      Plotly.newPlot("gd", [{ mode: typegraph.value,x: labels, y: values }]);
+    }
+    else {
+      const values = cards.map((card) => (100 * card) / sumCard);
+      Plotly.newPlot("gd", [{ type:  "pie", labels, values }]);
+    }
   });
 }
 
 // Dialogue 1
 function openDialog(datasetId: number, nameDataset: string) {
-  dialog.value = true;
+  dialog.value = !dialog.value;
   items2.value = [];
   currentDatasetId.value = datasetId;
   currentDataset.value = nameDataset;
@@ -179,7 +202,7 @@ function openDialog(datasetId: number, nameDataset: string) {
 
 // Dialogue 2
 function openDialog2(attributeId: number, nameAttribute: string) {
-  dialog2.value = true;
+  dialog2.value = !dialog2.value;
   items3.value = [];
   currentAttributeId.value = attributeId;
   currentAttribute.value = nameAttribute;
@@ -188,7 +211,7 @@ function openDialog2(attributeId: number, nameAttribute: string) {
 // Dialogue import
 const dialogimport = ref(false);
 function openImport() {
-  dialogimport.value = true;
+  dialogimport.value = !dialogimport.value;
 }
 
 // Disconnect
@@ -205,8 +228,8 @@ const DatasetName = ref("");
 const Lglobal = ref("");
 const filename = ref(undefined as Array<File> | undefined);
 
-const dialogerrorF= ref(false)
-const error= ref(false)
+const dialogerrorF = ref(false);
+const error = ref(false);
 
 function getFileFormat() {
   if (filename.value == undefined) {
@@ -216,11 +239,12 @@ function getFileFormat() {
   const extensions = filename.value[0].name.split(".");
 
   if (!["xes", "ocel"].includes(extensions[1])) {
-    error.value=true
+    error.value = true;
     dialogerrorF.value = true;
     return "";
+  } else {
+    error.value = false;
   }
-  else { error.value=false}
 
   return extensions[1];
 }
@@ -232,8 +256,8 @@ function updateChosenformat() {
 const chosenformat = ref("");
 
 const dialogsuccess = ref(false);
-const dialogerror =ref (false)
-const UploadError = ref ("")
+const dialogerror = ref(false);
+const UploadError = ref("");
 async function UploadData() {
   const formData = new FormData();
   if (filename.value == undefined) {
@@ -248,21 +272,17 @@ async function UploadData() {
     method: "POST",
     body: formData,
   };
-  
-  if ( DatasetName.value!=="" && Lglobal.value!==""){
-  const res = await fetch(`http://${URL.value}/v1/dataset/`, options);
 
-  const resJson = await res.json();
-  if(resJson.type == "success")
-  dialogsuccess.value = true;
-  else {
-    UploadError.value=resJson.message
-    dialogerror.value=true;
+  if (DatasetName.value !== "" && Lglobal.value !== "") {
+    const res = await fetch(`http://${URL.value}/v1/dataset/`, options);
+
+    const resJson = await res.json();
+    if (resJson.type == "success") dialogsuccess.value = true;
+    else {
+      UploadError.value = resJson.message;
+      dialogerror.value = true;
+    }
   }
-  
-}
-
-  
 }
 </script>
 
@@ -298,9 +318,9 @@ async function UploadData() {
         max-width="90vw"
         transition="dialog-transition"
         ><v-card>
-          <v-card-title primary-title>
-            {{ "Upload dataset" }}
-          </v-card-title>
+          <v-toolbar > <v-toolbar-title> Upload Dataset </v-toolbar-title>   
+          <v-btn icon="mdi-close-box" @click="openImport"></v-btn>
+        </v-toolbar>
           <div class="d-flex">
             <v-file-input
               v-model="filename"
@@ -372,12 +392,11 @@ async function UploadData() {
     >
       <v-card>
         <v-card-title primary-title>
-          {{UploadError}}
+          {{ UploadError }}
           <v-icon color="red" icon="mdi-alert-circle" size="small"></v-icon>
         </v-card-title>
       </v-card>
     </v-dialog>
-
 
     <v-card style="text-align: center; font-family: Helvetica">
       <v-card-title primary-title
@@ -441,6 +460,18 @@ async function UploadData() {
       v-model:items-per-page="itemsPerPage"
       @update:options="updateData"
     >
+      <template v-slot:header.name="{ column }">
+        <v-tooltip location="top">
+          <template v-slot:activator="{ props }">
+            <v-btn icon v-bind="props" density="compact">
+              <v-icon color="primary"> mdi-information-outline </v-icon>
+            </v-btn>
+          </template>
+          <span>Dataset name can be sorted by clicking on 'name'</span>
+        </v-tooltip>
+
+        {{ column.value }}
+      </template>
       <template v-slot:item.action="{ item }">
         <v-btn icon @click="openDialog(item.id, item.name)">...</v-btn>
       </template>
@@ -449,9 +480,9 @@ async function UploadData() {
     <!-- dialog for attributes -->
     <v-dialog v-model="dialog" max-width="90vw" transition="dialog-transition"
       ><v-card>
-        <v-card-title primary-title>
-          {{ currentDataset }}
-        </v-card-title>
+        <v-toolbar > <v-toolbar-title> Dataset : {{currentDataset}} </v-toolbar-title>   
+          <v-btn icon="mdi-close-box" @click="openDialog"></v-btn>
+        </v-toolbar>
         <v-card-text>
           <div class="d-flex">
             <v-text-field
@@ -477,6 +508,12 @@ async function UploadData() {
               color="primary"
               @click="openGraph"
             ></v-btn>
+            <v-select
+              v-model="typegraph"
+              label="Select graph type"
+              :items="['pie', 'bar','markers']"
+              variant="outlined"
+            ></v-select>
           </div>
           <v-data-table-server
             :items="items2"
@@ -487,6 +524,36 @@ async function UploadData() {
             v-model:items-per-page="itemsPerPage2"
             @update:options="updateAttribute"
           >
+            <template v-slot:header.name="{ column }">
+              <v-tooltip location="top">
+                <template v-slot:activator="{ props }">
+                  <v-btn icon v-bind="props" density="compact">
+                    <v-icon color="primary"> mdi-information-outline </v-icon>
+                  </v-btn>
+                </template>
+                <span
+                  >Attributes names can be sorted by clicking on 'name'</span
+                >
+              </v-tooltip>
+
+              {{ column.value }}
+            </template>
+
+            <template v-slot:header.cardinality="{ column }">
+              <v-tooltip location="top">
+                <template v-slot:activator="{ props }">
+                  <v-btn icon v-bind="props" density="compact">
+                    <v-icon color="primary"> mdi-information-outline </v-icon>
+                  </v-btn>
+                </template>
+                <span
+                  >Cardinality refers to the existing number of this attribute
+                </span>
+              </v-tooltip>
+
+              {{ column.value }}
+            </template>
+
             <template v-slot:item.details="{ item }">
               <v-btn icon @click="openDialog2(item.id, item.name)">...</v-btn>
             </template>
@@ -496,9 +563,10 @@ async function UploadData() {
     </v-dialog>
     <v-dialog v-model="dialog2" max-width="90vw" transition="dialog-transition"
       ><v-card>
-        <v-card-title primary-title>
-          {{ currentAttribute }}
-        </v-card-title>
+        <v-toolbar > <v-toolbar-title> Attribute : {{currentAttribute}} </v-toolbar-title>   
+          <v-btn icon="mdi-close-box" @click="openDialog2"></v-btn>
+        </v-toolbar>
+        
         <v-card-text>
           <div class="d-flex">
             <v-text-field
@@ -516,6 +584,12 @@ async function UploadData() {
               color="primary"
               @click="openGraph2"
             ></v-btn>
+            <v-select
+              v-model="typegraph"
+              label="Select graph type"
+              :items="['pie', 'bar','markers']"
+              variant="outlined"
+            ></v-select>
           </div>
           <v-data-table-server
             :items="items3"
@@ -526,8 +600,37 @@ async function UploadData() {
             v-model:items-per-page="itemsPerPage3"
             @update:options="updateValue"
           >
+            <template v-slot:header.value="{ column }">
+              <v-tooltip location="top">
+                <template v-slot:activator="{ props }">
+                  <v-btn icon v-bind="props" density="compact">
+                    <v-icon color="primary"> mdi-information-outline </v-icon>
+                  </v-btn>
+                </template>
+                <span>Value refers to the attribute value</span>
+              </v-tooltip>
+
+              {{ column.value }}
+            </template>
+
+            <template v-slot:header.occur="{ column }">
+              <v-tooltip location="top">
+                <template v-slot:activator="{ props }">
+                  <v-btn icon v-bind="props" density="compact">
+                    <v-icon color="primary"> mdi-information-outline </v-icon>
+                  </v-btn>
+                </template>
+                <span
+                  >Occurencies refers to the existing number of this value</span
+                >
+              </v-tooltip>
+
+
+              {{ column.value }}
+            </template>
           </v-data-table-server>
         </v-card-text>
+     
       </v-card>
     </v-dialog>
     <v-dialog
@@ -535,22 +638,42 @@ async function UploadData() {
       max-width="90vw"
       transition="dialog-transition"
       ><v-card>
-        <v-card-title primary-title>
-          {{ currentDataset }}
-        </v-card-title>
+        <v-toolbar > <v-toolbar-title>{{currentDataset}} </v-toolbar-title>
+          <v-tooltip v-if="typegraph=='pie'">
+            <template v-slot:activator="{ props }">
+              <v-btn icon v-bind="props" density="compact">
+                <v-icon color="primary"> mdi-information-outline </v-icon>
+              </v-btn>
+            </template>
+            <span>Double clicking on an attribute name hide others. If repeated after, goes back to normal.</span>
+          </v-tooltip>
+          <v-btn icon="mdi-close-box" @click="openGraph"></v-btn>
+
+        </v-toolbar>
+      
         <v-card-text>
           <div id="gd"></div>
         </v-card-text>
+        
       </v-card>
+      
     </v-dialog>
     <v-dialog
       v-model="dialogGraph2"
       max-width="90vw"
       transition="dialog-transition"
       ><v-card>
-        <v-card-title primary-title>
-          {{ currentAttribute }}
-        </v-card-title>
+        <v-toolbar > <v-toolbar-title>{{currentAttribute}} </v-toolbar-title>
+          <v-tooltip v-if="typegraph=='pie'">
+            <template v-slot:activator="{ props }">
+              <v-btn icon v-bind="props" density="compact">
+                <v-icon color="primary"> mdi-information-outline </v-icon>
+              </v-btn>
+            </template>
+            <span>Double clicking on a value name hide others. If repeated after, goes back to normal.</span>
+          </v-tooltip>
+          <v-btn icon="mdi-close-box" @click="openGraph2"></v-btn>
+        </v-toolbar>
         <v-card-text>
           <div id="gd"></div>
         </v-card-text>
