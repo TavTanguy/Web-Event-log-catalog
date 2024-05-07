@@ -2,7 +2,10 @@
 import { ref } from "vue";
 import router from "../router";
 
-const URL= ref("91.107.192.39")
+const URL = ref("91.107.192.39");
+
+const show1 = ref(false)
+const show2 = ref(false)
 // Script rules of forms
 const Username = ref("");
 function UsernameRules() {
@@ -44,7 +47,7 @@ async function CreateAccount() {
     const resJson = await res.json();
     if (resJson.type == "success") {
       Message.value = "";
-      
+
       router.push("/");
     } else {
       Message.value = resJson.message;
@@ -81,13 +84,19 @@ async function CreateAccount() {
           <v-text-field
             v-model="Password"
             :rules="[PasswordRules]"
+            :type="show1 ? 'text' : 'password'"
             label="Password"
+            :append-icon="show1 ? 'mdi-eye' : 'mdi-eye-off'"
+            @click:append="show1 = !show1"
           ></v-text-field>
 
           <v-text-field
             v-model="ConfirmPassword"
             :rules="[ConfirmPasswordRules]"
+            :type="show2 ? 'text' : 'password'"
             label="Confirm your password"
+            :append-icon="show2 ? 'mdi-eye' : 'mdi-eye-off'"
+            @click:append="show2 = !show2"
           ></v-text-field>
 
           <v-btn @click="CreateAccount()" class="mt-2" type="submit" block

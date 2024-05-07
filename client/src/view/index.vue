@@ -3,7 +3,7 @@ import { nextTick, ref, watch } from "vue";
 import Plotly from "plotly.js";
 import { file } from "@babel/types";
 
-const URL = ref("91.107.192.39");
+const URL = ref("https://events-logs.loca.lt/");
 //datasets
 
 const items = ref([]);
@@ -15,8 +15,17 @@ const headers = ref([
   { title: "id", key: "id" },
   { title: "name", key: "name" },
   { title: "link_global", key: "link_global" },
-  { title: "action", key: "action", sortable: false },
-]);
+  { title: "action", key: "action", sortable: false }])
+
+// dataset infos
+const datasetinfos=ref([] as any[])
+const headers4 = ref([
+  { title: "start_activities", key: "start_activities" },
+  { title: "end_activities", key: "end_activities" },
+  { title: "nb_trace", key: "nb_trace" },
+  { title: "trace_length_mean", key: "trace_length_mean"},
+  { title: "trace_length_std", key: "trace_length_std"}])
+
 
 // attributes
 
@@ -41,6 +50,7 @@ const headers2 = ref([
   { title: "details", key: "details", sortable: false },
 ]);
 const dialogGraph = ref(false);
+
 // values
 
 const dialogGraph2 = ref(false);
@@ -69,7 +79,7 @@ async function updateData({ page, sortBy }) {
   if (sortBy.length == 0) sortBy = [{ key: "", order: "ASC" }];
 
   const res = await fetch(
-    `http://${URL.value}/v1/dataset?` +
+    `${URL.value}/v1/dataset?` +
       new URLSearchParams({
         limit: itemsPerPage.value,
         from: ((page - 1) * Number(itemsPerPage.value) + 1).toString(),
@@ -86,6 +96,16 @@ async function updateData({ page, sortBy }) {
   totalItems.value = resJson.res.totalLength;
   loading.value = false;
 }
+// function to fetch dataset infos 
+
+async function updateDataInfos() {
+
+  const res = await fetch(
+    `${URL.value}/v1/dataset/${currentDatasetId.value}/stats?`)
+  const resJson = await res.json();
+  datasetinfos.value = [resJson.res];
+  
+}
 
 // function to update attributes
 let lastParams2: any;
@@ -99,7 +119,7 @@ async function updateAttribute({ page, sortBy }, limitAll = false) {
   if (sortBy.length == 0) sortBy = [{ key: "", order: "ASC" }];
 
   const res = await fetch(
-    `http://${URL.value}/v1/dataset/${currentDatasetId.value}/attribute?` +
+    `${URL.value}/v1/dataset/${currentDatasetId.value}/attribute?` +
       new URLSearchParams({
         limit: limitAll ? "-1" : itemsPerPage2.value,
         from: ((page - 1) * Number(itemsPerPage2.value) + 1).toString(),
@@ -126,7 +146,7 @@ async function updateValue({ page, sortBy }, limitAll = false) {
   if (sortBy.length == 0) sortBy = [{ key: "", order: "ASC" }];
 
   const res = await fetch(
-    `http://${URL.value}/v1/dataset/${currentDatasetId.value}/attribute/${currentAttributeId.value}/values?` +
+    `${URL.value}/v1/dataset/${currentDatasetId.value}/attribute/${currentAttributeId.value}/values?` +
       new URLSearchParams({
         limit: limitAll ? "-1" : itemsPerPage3.value,
         from: ((page - 1) * Number(itemsPerPage3.value) + 1).toString(),
@@ -141,6 +161,7 @@ async function updateValue({ page, sortBy }, limitAll = false) {
   loading3.value = false;
 }
 
+
 // Graph Attributes
 const typegraph = ref("bar");
 async function openGraph() {
@@ -154,12 +175,15 @@ async function openGraph() {
     const values = cards.map((card) => (100 * card) / sumCard);
     if (typegraph.value == "bar") {
       Plotly.newPlot("gd", [{ type: typegraph.value, x: labels, y: values }]);
-    } 
-    else if ( typegraph.value=="markers") {
+    } else if (typegraph.value == "box") {
+      Plotly.newPlot("gd", [
+        { y: labels, type: "box" },
+        { y: values, type: "box" },
+      ]);
+    } else if (typegraph.value == "markers") {
       const values = cards.map((card) => card);
-      Plotly.newPlot("gd", [{ mode: typegraph.value,x: labels, y: values }]);
-    }
-    else {
+      Plotly.newPlot("gd", [{ mode: typegraph.value, x: labels, y: values }]);
+    } else {
       Plotly.newPlot("gd", [{ type: "pie", labels, values }]);
     }
   });
@@ -180,14 +204,22 @@ async function openGraph2() {
     if (typegraph.value == "bar") {
       const values = cards.map((card) => card);
       Plotly.newPlot("gd", [{ type: typegraph.value, x: labels, y: values }]);
-    } 
-    else if ( typegraph.value=="markers") {
+    } else if (typegraph.value == "box") {
       const values = cards.map((card) => card);
-      Plotly.newPlot("gd", [{ mode: typegraph.value,x: labels, y: values }]);
-    }
-    else {
+      const boxvalues: any[] = [];
+      for (let i = 0; i < labels.length; i++) {
+        for (let j = 0; j < values[i]; j++) {
+          boxvalues.push(labels[i]);
+        }
+      }
+
+      Plotly.newPlot("gd", [{ y: boxvalues, type: "box" }]);
+    } else if (typegraph.value == "markers") {
+      const values = cards.map((card) => card);
+      Plotly.newPlot("gd", [{ mode: typegraph.value, x: labels, y: values }]);
+    } else {
       const values = cards.map((card) => (100 * card) / sumCard);
-      Plotly.newPlot("gd", [{ type:  "pie", labels, values }]);
+      Plotly.newPlot("gd", [{ type: "pie", labels, values }]);
     }
   });
 }
@@ -207,7 +239,13 @@ function openDialog2(attributeId: number, nameAttribute: string) {
   currentAttributeId.value = attributeId;
   currentAttribute.value = nameAttribute;
 }
-
+// Dialogue 3 Dataset infos
+const dialog3 = ref(false);
+function openDialog3(datasetId: number, nameDataset: string) {
+  dialog3.value = !dialog3.value;
+  currentDatasetId.value = datasetId;
+  currentDataset.value = nameDataset;
+}
 // Dialogue import
 const dialogimport = ref(false);
 function openImport() {
@@ -254,12 +292,13 @@ function updateChosenformat() {
 }
 
 const chosenformat = ref("");
-
+const loading4 = ref(false);
 const dialogsuccess = ref(false);
 const dialogerror = ref(false);
 const UploadError = ref("");
 async function UploadData() {
   const formData = new FormData();
+
   if (filename.value == undefined) {
     return;
   }
@@ -274,7 +313,8 @@ async function UploadData() {
   };
 
   if (DatasetName.value !== "" && Lglobal.value !== "") {
-    const res = await fetch(`http://${URL.value}/v1/dataset/`, options);
+    loading4.value = true;
+    const res = await fetch(`${URL.value}/v1/dataset/`, options);
 
     const resJson = await res.json();
     if (resJson.type == "success") dialogsuccess.value = true;
@@ -283,6 +323,7 @@ async function UploadData() {
       dialogerror.value = true;
     }
   }
+  loading4.value = false;
 }
 </script>
 
@@ -318,9 +359,10 @@ async function UploadData() {
         max-width="90vw"
         transition="dialog-transition"
         ><v-card>
-          <v-toolbar > <v-toolbar-title> Upload Dataset </v-toolbar-title>   
-          <v-btn icon="mdi-close-box" @click="openImport"></v-btn>
-        </v-toolbar>
+          <v-toolbar>
+            <v-toolbar-title> Upload Dataset </v-toolbar-title>
+            <v-btn icon="mdi-close-box" @click="openImport"></v-btn>
+          </v-toolbar>
           <div class="d-flex">
             <v-file-input
               v-model="filename"
@@ -350,7 +392,12 @@ async function UploadData() {
                 label="Link global"
               ></v-text-field>
 
-              <v-btn @click="UploadData" class="mt-2" type="submit" block
+              <v-btn
+                @click="UploadData"
+                :loading="loading4"
+                class="mt-2"
+                type="submit"
+                block
                 >Upload</v-btn
               >
             </v-form>
@@ -398,6 +445,7 @@ async function UploadData() {
       </v-card>
     </v-dialog>
 
+    <!-- MAIN PAGE -->
     <v-card style="text-align: center; font-family: Helvetica">
       <v-card-title primary-title
         ><strong>EVENTLOG EXPLORER</strong></v-card-title
@@ -474,13 +522,35 @@ async function UploadData() {
       </template>
       <template v-slot:item.action="{ item }">
         <v-btn icon @click="openDialog(item.id, item.name)">...</v-btn>
+        <v-btn icon="mdi-information" @click="openDialog3(item.id, item.name)"></v-btn>
       </template>
+      
     </v-data-table-server>
+
+    <!-- dialog for dataset infos -->
+   
+    <v-dialog v-model="dialog3" max-width="90vw" transition="dialog-transition"
+      ><v-card>
+        <v-toolbar>
+          <v-toolbar-title> Dataset infos </v-toolbar-title>
+          <v-btn icon="mdi-close-box" @click="openDialog3"></v-btn>
+        </v-toolbar>
+        <v-data-table-virtual
+      :items="datasetinfos"
+      :loading="loading4"
+      :headers="headers4"
+      @update:options="updateDataInfos"
+    >
+      </v-data-table-virtual>
+      </v-card>
+    </v-dialog>
+  
 
     <!-- dialog for attributes -->
     <v-dialog v-model="dialog" max-width="90vw" transition="dialog-transition"
       ><v-card>
-        <v-toolbar > <v-toolbar-title> Dataset : {{currentDataset}} </v-toolbar-title>   
+        <v-toolbar>
+          <v-toolbar-title> Dataset : {{ currentDataset }} </v-toolbar-title>
           <v-btn icon="mdi-close-box" @click="openDialog"></v-btn>
         </v-toolbar>
         <v-card-text>
@@ -511,7 +581,7 @@ async function UploadData() {
             <v-select
               v-model="typegraph"
               label="Select graph type"
-              :items="['pie', 'bar','markers']"
+              :items="['pie', 'bar', 'markers', 'box']"
               variant="outlined"
             ></v-select>
           </div>
@@ -563,10 +633,13 @@ async function UploadData() {
     </v-dialog>
     <v-dialog v-model="dialog2" max-width="90vw" transition="dialog-transition"
       ><v-card>
-        <v-toolbar > <v-toolbar-title> Attribute : {{currentAttribute}} </v-toolbar-title>   
+        <v-toolbar>
+          <v-toolbar-title>
+            Attribute : {{ currentAttribute }}
+          </v-toolbar-title>
           <v-btn icon="mdi-close-box" @click="openDialog2"></v-btn>
         </v-toolbar>
-        
+
         <v-card-text>
           <div class="d-flex">
             <v-text-field
@@ -587,7 +660,7 @@ async function UploadData() {
             <v-select
               v-model="typegraph"
               label="Select graph type"
-              :items="['pie', 'bar','markers']"
+              :items="['pie', 'bar', 'markers', 'box']"
               variant="outlined"
             ></v-select>
           </div>
@@ -625,12 +698,10 @@ async function UploadData() {
                 >
               </v-tooltip>
 
-
               {{ column.value }}
             </template>
           </v-data-table-server>
         </v-card-text>
-     
       </v-card>
     </v-dialog>
     <v-dialog
@@ -638,39 +709,44 @@ async function UploadData() {
       max-width="90vw"
       transition="dialog-transition"
       ><v-card>
-        <v-toolbar > <v-toolbar-title>{{currentDataset}} </v-toolbar-title>
-          <v-tooltip v-if="typegraph=='pie'">
+        <v-toolbar>
+          <v-toolbar-title>{{ currentDataset }} </v-toolbar-title>
+          <v-tooltip v-if="typegraph == 'pie'">
             <template v-slot:activator="{ props }">
               <v-btn icon v-bind="props" density="compact">
                 <v-icon color="primary"> mdi-information-outline </v-icon>
               </v-btn>
             </template>
-            <span>Double clicking on an attribute name hide others. If repeated after, goes back to normal.</span>
+            <span
+              >Double clicking on an attribute name hide others. If repeated
+              after, goes back to normal.</span
+            >
           </v-tooltip>
           <v-btn icon="mdi-close-box" @click="openGraph"></v-btn>
-
         </v-toolbar>
-      
+
         <v-card-text>
           <div id="gd"></div>
         </v-card-text>
-        
       </v-card>
-      
     </v-dialog>
     <v-dialog
       v-model="dialogGraph2"
       max-width="90vw"
       transition="dialog-transition"
       ><v-card>
-        <v-toolbar > <v-toolbar-title>{{currentAttribute}} </v-toolbar-title>
-          <v-tooltip v-if="typegraph=='pie'">
+        <v-toolbar>
+          <v-toolbar-title>{{ currentAttribute }} </v-toolbar-title>
+          <v-tooltip v-if="typegraph == 'pie'">
             <template v-slot:activator="{ props }">
               <v-btn icon v-bind="props" density="compact">
                 <v-icon color="primary"> mdi-information-outline </v-icon>
               </v-btn>
             </template>
-            <span>Double clicking on a value name hide others. If repeated after, goes back to normal.</span>
+            <span
+              >Double clicking on a value name hide others. If repeated after,
+              goes back to normal.</span
+            >
           </v-tooltip>
           <v-btn icon="mdi-close-box" @click="openGraph2"></v-btn>
         </v-toolbar>
