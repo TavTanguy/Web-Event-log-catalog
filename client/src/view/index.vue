@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from "vue";
-import Plotly from "plotly.js";
-
+import Plotly, { Mapbox } from "plotly.js";
 
 //const URL = ref("http://91.107.192.39");
-const URL = ref ("http://events-logs.loca.lt")
+const URL = ref("http://events-logs.loca.lt");
 const isSorted = ref(false);
 
 // threshold function
@@ -35,13 +34,16 @@ const items = ref([]);
 const itemsPerPage = ref("10");
 const totalItems = ref("79");
 const searchName = ref("");
+const searchColl = ref("");
 const loading = ref(false);
 const headers = ref([
   { title: "id", key: "id" },
+  { title: "collectionName", key: "collectionName" },
   { title: "name", key: "name" },
+
   { title: "link_global", key: "link_global" },
   { title: "author", key: "author" },
-  {title: "collectionName", key: "collectionName"},
+
   { title: "action", key: "action", sortable: false },
 ]);
 
@@ -103,6 +105,8 @@ let lastParams: any;
 function updateFilter() {
   return updateData(lastParams);
 }
+let OldMaxCard:string=maxCardinalit.value;
+
 async function updateData({ page, sortBy }) {
   lastParams = { page, sortBy };
   loading.value = true;
@@ -113,6 +117,7 @@ async function updateData({ page, sortBy }) {
       new URLSearchParams({
         limit: itemsPerPage.value,
         from: ((page - 1) * Number(itemsPerPage.value) + 1).toString(),
+        searchCollName: searchColl.value,
         searchName: searchName.value,
         searchNameAttribute: searchAtt.value,
         minCardinality: minCardinality.value,
@@ -124,11 +129,14 @@ async function updateData({ page, sortBy }) {
   const resJson = await res.json();
   items.value = resJson.res.datasets;
   totalItems.value = resJson.res.totalLength;
-  
-  maxCardinalit.value=resJson.res.maxCardinality
+
+if (maxCardinalit.value==OldMaxCard) {
+
+  maxCardinalit.value = resJson.res.maxCardinality;
+}
   loading.value = false;
   isSorted.value = !isSorted.value;
-  
+OldMaxCard=maxCardinalit.value
 }
 // function to fetch dataset infos
 
@@ -243,10 +251,7 @@ async function openGraph2() {
     if (typegraph.value == "bar") {
       const values = cards.map((card) => card);
       Plotly.newPlot("gd", [{ type: typegraph.value, x: labels, y: values }]);
-
-    } 
-    
-    else if (typegraph.value == "box") {
+    } else if (typegraph.value == "box") {
       const values = cards.map((card) => card);
       let boxvalues: any[] = [];
       for (let i = 0; i < labels.length; i++) {
@@ -255,7 +260,6 @@ async function openGraph2() {
         }
       }
 
-      
       if (boxvalues.map(Number).every((v) => !Number.isNaN(v))) {
         boxvalues = getListWithoutPercentiles(
           boxvalues,
@@ -274,7 +278,7 @@ async function openGraph2() {
   });
 }
 
-// Dialogue 1
+// Dialogue 1 Attribute
 function openDialog(datasetId: number, nameDataset: string) {
   dialog.value = !dialog.value;
   items2.value = [];
@@ -282,7 +286,7 @@ function openDialog(datasetId: number, nameDataset: string) {
   currentDataset.value = nameDataset;
 }
 
-// Dialogue 2
+// Dialogue 2 Values
 function openDialog2(attributeId: number, nameAttribute: string) {
   dialog2.value = !dialog2.value;
   items3.value = [];
@@ -304,20 +308,19 @@ function openImport() {
 
 // Disconnect
 
+const token = ref(localStorage.getItem("token"));
 function Disconnect() {
   token.value = null;
   localStorage.removeItem("token");
 }
 
-const token = ref(localStorage.getItem("token"));
+// Functions to Upload files
 
 const DatasetName = ref("");
-const DatasetAuthor = ref ("");
+const DatasetAuthor = ref("");
 const DatasetCollection = ref("");
-
 const Lglobal = ref("");
 const filename = ref(undefined as Array<File> | undefined);
-
 const dialogerrorF = ref(false);
 const error = ref(false);
 
@@ -378,13 +381,15 @@ async function UploadData() {
     }
   }
   loading4.value = false;
-  updateFilter()
+  updateFilter();
 }
 </script>
 
+<!---------------------------------------------------------------------------T E M P L A T E--------------------------------------------------------------------------------------->
+
 <template>
   <div>
-    <!-- Login -->
+    <!-- Login, Register and Import -->
     <v-container>
       <v-btn v-if="!token" density="comfortable"
         ><router-link to="/create">
@@ -408,7 +413,8 @@ async function UploadData() {
         <v-icon color="primary" icon="mdi-upload" size="large"></v-icon>
         Import</v-btn
       >
-      <!-- Upload -->
+      <!-- Upload Dialog-->
+
       <v-dialog
         v-model="dialogimport"
         max-width="90vw"
@@ -418,6 +424,8 @@ async function UploadData() {
             <v-toolbar-title> Upload Dataset </v-toolbar-title>
             <v-btn icon="mdi-close-box" @click="openImport"></v-btn>
           </v-toolbar>
+
+          <!-- Upload forms -->
           <div class="d-flex">
             <v-file-input
               v-model="filename"
@@ -457,7 +465,7 @@ async function UploadData() {
                 label="Link global"
               ></v-text-field>
 
-              <v-btn 
+              <v-btn
                 @click="UploadData"
                 :loading="loading4"
                 class="mt-2"
@@ -470,6 +478,8 @@ async function UploadData() {
         </v-card>
       </v-dialog>
     </v-container>
+
+    <!-- Message Upload Success/Error -->
 
     <v-dialog
       v-model="dialogsuccess"
@@ -515,7 +525,19 @@ async function UploadData() {
       <v-card-title primary-title><strong>LOG ATLAS</strong></v-card-title>
     </v-card>
 
+    <!--Search sections-->
+
     <div class="d-flex">
+      <v-text-field
+        v-model="searchColl"
+        @update:modelValue="updateFilter"
+        class="ma-0"
+        density="compact"
+        placeholder="Search collection..."
+        hide-details
+      >
+      </v-text-field>
+
       <v-text-field
         v-model="searchName"
         @update:modelValue="updateFilter"
@@ -563,6 +585,8 @@ async function UploadData() {
       </v-text-field>
     </div>
 
+    <!--Dataset Table-->
+
     <v-data-table-server
       :items="items"
       :items-length="totalItems"
@@ -588,6 +612,8 @@ async function UploadData() {
           {{ column.value }}
         </div>
       </template>
+
+      <!--Buttons to toggle Dataset infos or attributes-->
 
       <template v-slot:item.action="{ item }">
         <v-btn icon @click="openDialog(item.id, item.name)">...</v-btn>
@@ -616,7 +642,7 @@ async function UploadData() {
       </v-card>
     </v-dialog>
 
-    <!-- dialog for attributes -->
+    <!-- Dialog for Attributes -->
     <v-dialog v-model="dialog" max-width="90vw" transition="dialog-transition"
       ><v-card>
         <v-toolbar>
@@ -625,6 +651,8 @@ async function UploadData() {
         </v-toolbar>
         <v-card-text>
           <div class="d-flex">
+            <!--Search sections-->
+
             <v-text-field
               v-model="searchAtt"
               @update:modelValue="updateFilterAtt"
@@ -641,6 +669,9 @@ async function UploadData() {
               placeholder="Search name..."
               hide-details
             ></v-text-field>
+
+            <!-- Graph options and button-->
+
             <v-btn
               icon="mdi-chart-box"
               variant="outlined"
@@ -655,6 +686,9 @@ async function UploadData() {
               variant="outlined"
             ></v-select>
           </div>
+
+          <!--Attributes table-->
+
           <v-data-table-server
             :items="items2"
             :items-length="totalItems2"
@@ -664,6 +698,8 @@ async function UploadData() {
             v-model:items-per-page="itemsPerPage2"
             @update:options="updateAttribute"
           >
+            <!-- Added filter arrow button and info tool tip-->
+
             <template v-slot:header.name="{ column }">
               <v-tooltip location="top">
                 <template v-slot:activator="{ props }">
@@ -700,6 +736,8 @@ async function UploadData() {
               {{ column.value }}
             </template>
 
+            <!--Dialog for Values-->
+
             <template v-slot:item.details="{ item }">
               <v-btn icon @click="openDialog2(item.id, item.name)">...</v-btn>
             </template>
@@ -716,6 +754,8 @@ async function UploadData() {
           <v-btn icon="mdi-close-box" @click="openDialog2"></v-btn>
         </v-toolbar>
 
+        <!--Search sections-->
+
         <v-card-text>
           <div class="d-flex">
             <v-text-field
@@ -726,6 +766,9 @@ async function UploadData() {
               placeholder="Search value..."
               hide-details
             ></v-text-field>
+
+            <!--Graph options and button-->
+
             <v-btn
               icon="mdi-chart-box"
               variant="outlined"
@@ -740,6 +783,9 @@ async function UploadData() {
               variant="outlined"
             ></v-select>
           </div>
+
+          <!--Values table-->
+
           <v-data-table-server
             :items="items3"
             :items-length="totalItems3"
@@ -749,6 +795,7 @@ async function UploadData() {
             v-model:items-per-page="itemsPerPage3"
             @update:options="updateValue"
           >
+            <!-- Added filter arrow button and info tool tip-->
             <template v-slot:header.value="{ column }">
               <v-tooltip location="top">
                 <template v-slot:activator="{ props }">
@@ -788,6 +835,9 @@ async function UploadData() {
         </v-card-text>
       </v-card>
     </v-dialog>
+
+    <!--Dialog Graph for Attributes-->
+
     <v-dialog
       v-model="dialogGraph"
       max-width="90vw"
@@ -814,6 +864,9 @@ async function UploadData() {
         </v-card-text>
       </v-card>
     </v-dialog>
+
+    <!--Dialog Graph for Values-->
+
     <v-dialog
       v-model="dialogGraph2"
       max-width="90vw"

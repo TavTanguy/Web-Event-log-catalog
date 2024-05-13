@@ -3,10 +3,11 @@ import { ref } from "vue";
 import router from "../router";
 
 //const URL = ref("91.107.192.39");
-const URL = ref ("http://events-logs.loca.lt")
+const URL = ref("events-logs.loca.lt");
 
-const show1 = ref(false)
-const show2 = ref(false)
+const show1 = ref(false);
+const show2 = ref(false);
+
 // Script rules of forms
 const Username = ref("");
 function UsernameRules() {
@@ -34,7 +35,23 @@ function ConfirmPasswordRules() {
 
   return "Password doesn't match.";
 }
+// Timeout
+const timer = ref();
+const timer2 = ref();
+
+function Timertoken() {
+  timer.value = setTimeout(() => {
+    // Change the value of the object after an hour
+
+    localStorage.removeItem("token");
+    token.value = "";
+  }, 600000);
+}
+const token = ref("");
 const Message = ref("");
+
+// Function that  create the account
+
 async function CreateAccount() {
   if (Username.value !== "" && Email.value !== "" && Password.value !== "") {
     const res = await fetch(`http://${URL.value}/v1/user`, {
@@ -48,6 +65,9 @@ async function CreateAccount() {
     const resJson = await res.json();
     if (resJson.type == "success") {
       Message.value = "";
+      token.value = resJson.res.token;
+      localStorage.setItem("token", token.value);
+      Timertoken();
 
       router.push("/");
     } else {
@@ -58,6 +78,7 @@ async function CreateAccount() {
 </script>
 
 <template>
+  <!-- Create account forms -->
   <div>
     <v-card>
       <v-card-title primary-title>
