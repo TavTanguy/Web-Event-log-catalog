@@ -1,9 +1,34 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from "vue";
 import Plotly from "plotly.js";
-import { file } from "@babel/types";
 
-const URL = ref("https://events-logs.loca.lt/");
+
+//const URL = ref("http://91.107.192.39");
+const URL = ref ("http://events-logs.loca.lt")
+const isSorted = ref(false);
+
+// threshold function
+function getListWithoutPercentiles(
+  list: number[],
+  threshold95: number,
+  threshold5: number
+): number[] {
+  const sortedList = list.sort((a, b) => a - b);
+
+  const ninetyFifthPercentileIndex = Math.floor(sortedList.length * 0.95);
+
+  const fifthPercentileIndex = Math.floor(sortedList.length * 0.05);
+
+  threshold95 = sortedList[ninetyFifthPercentileIndex];
+
+  threshold5 = sortedList[fifthPercentileIndex];
+
+  return list.filter((value) => value > threshold5 && value < threshold95);
+}
+
+let list95Value: number;
+let list5Value: number;
+
 //datasets
 
 const items = ref([]);
@@ -15,17 +40,22 @@ const headers = ref([
   { title: "id", key: "id" },
   { title: "name", key: "name" },
   { title: "link_global", key: "link_global" },
-  { title: "action", key: "action", sortable: false }])
+  { title: "author", key: "author" },
+  {title: "collectionName", key: "collectionName"},
+  { title: "action", key: "action", sortable: false },
+]);
 
 // dataset infos
-const datasetinfos=ref([] as any[])
+const datasetinfos = ref([] as any[]);
 const headers4 = ref([
   { title: "start_activities", key: "start_activities" },
   { title: "end_activities", key: "end_activities" },
-  { title: "nb_trace", key: "nb_trace" },
-  { title: "trace_length_mean", key: "trace_length_mean"},
-  { title: "trace_length_std", key: "trace_length_std"}])
-
+  { title: "trace_count", key: "trace_count" },
+  { title: "trace_length_mean", key: "trace_length_mean" },
+  { title: "trace_length_min", key: "trace_length_min" },
+  { title: "trace_length_max", key: "trace_length_max" },
+  { title: "trace_length_std", key: "trace_length_std" },
+]);
 
 // attributes
 
@@ -40,7 +70,7 @@ const search2 = ref("");
 const loading2 = ref(false);
 const searchConcept = ref("");
 const minCardinality = ref("0");
-const maxCardinality = ref("251734");
+const maxCardinalit = ref("100");
 
 const headers2 = ref([
   { title: "type", key: "type" },
@@ -86,7 +116,7 @@ async function updateData({ page, sortBy }) {
         searchName: searchName.value,
         searchNameAttribute: searchAtt.value,
         minCardinality: minCardinality.value,
-        maxCardinality: maxCardinality.value,
+        maxCardinality: maxCardinalit.value,
         sortBy: sortBy[0].key,
         orderBy: sortBy[0].order.toUpperCase(),
       })
@@ -94,17 +124,20 @@ async function updateData({ page, sortBy }) {
   const resJson = await res.json();
   items.value = resJson.res.datasets;
   totalItems.value = resJson.res.totalLength;
+  
+  maxCardinalit.value=resJson.res.maxCardinality
   loading.value = false;
+  isSorted.value = !isSorted.value;
+  
 }
-// function to fetch dataset infos 
+// function to fetch dataset infos
 
 async function updateDataInfos() {
-
   const res = await fetch(
-    `${URL.value}/v1/dataset/${currentDatasetId.value}/stats?`)
+    `${URL.value}/v1/dataset/${currentDatasetId.value}/stats?`
+  );
   const resJson = await res.json();
   datasetinfos.value = [resJson.res];
-  
 }
 
 // function to update attributes
@@ -133,6 +166,7 @@ async function updateAttribute({ page, sortBy }, limitAll = false) {
   items2.value = resJson.res.attributes;
   totalItems2.value = resJson.res.totalLength;
   loading2.value = false;
+  isSorted.value = !isSorted.value;
 }
 
 // function to update values
@@ -159,8 +193,8 @@ async function updateValue({ page, sortBy }, limitAll = false) {
   items3.value = resJson.res.values;
   totalItems3.value = resJson.res.totalLength;
   loading3.value = false;
+  isSorted.value = !isSorted.value;
 }
-
 
 // Graph Attributes
 const typegraph = ref("bar");
@@ -176,10 +210,15 @@ async function openGraph() {
     if (typegraph.value == "bar") {
       Plotly.newPlot("gd", [{ type: typegraph.value, x: labels, y: values }]);
     } else if (typegraph.value == "box") {
-      Plotly.newPlot("gd", [
-        { y: labels, type: "box" },
-        { y: values, type: "box" },
-      ]);
+      const values = cards.map((card) => card);
+      const boxvalues: any[] = [];
+      for (let i = 0; i < labels.length; i++) {
+        for (let j = 0; j < values[i]; j++) {
+          boxvalues.push(labels[i]);
+        }
+      }
+
+      Plotly.newPlot("gd", [{ y: boxvalues, type: "box" }]);
     } else if (typegraph.value == "markers") {
       const values = cards.map((card) => card);
       Plotly.newPlot("gd", [{ mode: typegraph.value, x: labels, y: values }]);
@@ -204,15 +243,26 @@ async function openGraph2() {
     if (typegraph.value == "bar") {
       const values = cards.map((card) => card);
       Plotly.newPlot("gd", [{ type: typegraph.value, x: labels, y: values }]);
-    } else if (typegraph.value == "box") {
+
+    } 
+    
+    else if (typegraph.value == "box") {
       const values = cards.map((card) => card);
-      const boxvalues: any[] = [];
+      let boxvalues: any[] = [];
       for (let i = 0; i < labels.length; i++) {
         for (let j = 0; j < values[i]; j++) {
           boxvalues.push(labels[i]);
         }
       }
 
+      
+      if (boxvalues.map(Number).every((v) => !Number.isNaN(v))) {
+        boxvalues = getListWithoutPercentiles(
+          boxvalues,
+          list95Value,
+          list5Value
+        );
+      }
       Plotly.newPlot("gd", [{ y: boxvalues, type: "box" }]);
     } else if (typegraph.value == "markers") {
       const values = cards.map((card) => card);
@@ -262,6 +312,8 @@ function Disconnect() {
 const token = ref(localStorage.getItem("token"));
 
 const DatasetName = ref("");
+const DatasetAuthor = ref ("");
+const DatasetCollection = ref("");
 
 const Lglobal = ref("");
 const filename = ref(undefined as Array<File> | undefined);
@@ -304,6 +356,8 @@ async function UploadData() {
   }
   formData.append("file", filename.value[0]);
   formData.append("name", DatasetName.value);
+  formData.append("author", DatasetAuthor.value);
+  formData.append("collectionName", DatasetCollection.value);
   formData.append("linkGlobal", Lglobal.value);
 
   const options = {
@@ -324,6 +378,7 @@ async function UploadData() {
     }
   }
   loading4.value = false;
+  updateFilter()
 }
 </script>
 
@@ -388,11 +443,21 @@ async function UploadData() {
               ></v-text-field>
 
               <v-text-field
+                v-model="DatasetAuthor"
+                label="Dataset Author"
+              ></v-text-field>
+
+              <v-text-field
+                v-model="DatasetCollection"
+                label="Dataset Collection"
+              ></v-text-field>
+
+              <v-text-field
                 v-model="Lglobal"
                 label="Link global"
               ></v-text-field>
 
-              <v-btn
+              <v-btn 
                 @click="UploadData"
                 :loading="loading4"
                 class="mt-2"
@@ -447,9 +512,7 @@ async function UploadData() {
 
     <!-- MAIN PAGE -->
     <v-card style="text-align: center; font-family: Helvetica">
-      <v-card-title primary-title
-        ><strong>EVENTLOG EXPLORER</strong></v-card-title
-      >
+      <v-card-title primary-title><strong>LOG ATLAS</strong></v-card-title>
     </v-card>
 
     <div class="d-flex">
@@ -476,7 +539,7 @@ async function UploadData() {
         type="number"
         min="0"
         step="1"
-        :max="maxCardinality"
+        :max="maxCardinalit"
         v-model="minCardinality"
         @update:modelValue="updateFilter"
         class="ma-0"
@@ -490,7 +553,7 @@ async function UploadData() {
         :min="minCardinality"
         max="251734"
         step="1"
-        v-model="maxCardinality"
+        v-model="maxCardinalit"
         @update:modelValue="updateFilter"
         class="ma-0"
         density="compact"
@@ -509,26 +572,34 @@ async function UploadData() {
       @update:options="updateData"
     >
       <template v-slot:header.name="{ column }">
-        <v-tooltip location="top">
-          <template v-slot:activator="{ props }">
-            <v-btn icon v-bind="props" density="compact">
-              <v-icon color="primary"> mdi-information-outline </v-icon>
-            </v-btn>
-          </template>
-          <span>Dataset name can be sorted by clicking on 'name'</span>
-        </v-tooltip>
+        <div class="d-flex align-center">
+          <v-tooltip location="top">
+            <template v-slot:activator="{ props }">
+              <v-btn icon v-bind="props" density="compact">
+                <v-icon color="primary"> mdi-information-outline </v-icon>
+              </v-btn>
+            </template>
+            <span>Dataset name can be sorted by clicking on 'name'</span>
+          </v-tooltip>
+          <v-icon v-if="column.value && isSorted">mdi-arrow-up</v-icon>
 
-        {{ column.value }}
+          <v-icon v-else-if="column.value && !isSorted">mdi-arrow-down</v-icon>
+
+          {{ column.value }}
+        </div>
       </template>
+
       <template v-slot:item.action="{ item }">
         <v-btn icon @click="openDialog(item.id, item.name)">...</v-btn>
-        <v-btn icon="mdi-information" @click="openDialog3(item.id, item.name)"></v-btn>
+        <v-btn
+          icon="mdi-information"
+          @click="openDialog3(item.id, item.name)"
+        ></v-btn>
       </template>
-      
     </v-data-table-server>
 
     <!-- dialog for dataset infos -->
-   
+
     <v-dialog v-model="dialog3" max-width="90vw" transition="dialog-transition"
       ><v-card>
         <v-toolbar>
@@ -536,15 +607,14 @@ async function UploadData() {
           <v-btn icon="mdi-close-box" @click="openDialog3"></v-btn>
         </v-toolbar>
         <v-data-table-virtual
-      :items="datasetinfos"
-      :loading="loading4"
-      :headers="headers4"
-      @update:options="updateDataInfos"
-    >
-      </v-data-table-virtual>
+          :items="datasetinfos"
+          :loading="loading4"
+          :headers="headers4"
+          @update:options="updateDataInfos"
+        >
+        </v-data-table-virtual>
       </v-card>
     </v-dialog>
-  
 
     <!-- dialog for attributes -->
     <v-dialog v-model="dialog" max-width="90vw" transition="dialog-transition"
@@ -605,7 +675,11 @@ async function UploadData() {
                   >Attributes names can be sorted by clicking on 'name'</span
                 >
               </v-tooltip>
+              <v-icon v-if="column.value && isSorted">mdi-arrow-up</v-icon>
 
+              <v-icon v-else-if="column.value && !isSorted"
+                >mdi-arrow-down</v-icon
+              >
               {{ column.value }}
             </template>
 
@@ -616,11 +690,13 @@ async function UploadData() {
                     <v-icon color="primary"> mdi-information-outline </v-icon>
                   </v-btn>
                 </template>
-                <span
-                  >Cardinality refers to the existing number of this attribute
-                </span>
+                <span>Cardinality refers to the amount of this attribute </span>
               </v-tooltip>
+              <v-icon v-if="column.value && isSorted">mdi-arrow-up</v-icon>
 
+              <v-icon v-else-if="column.value && !isSorted"
+                >mdi-arrow-down</v-icon
+              >
               {{ column.value }}
             </template>
 
@@ -682,7 +758,11 @@ async function UploadData() {
                 </template>
                 <span>Value refers to the attribute value</span>
               </v-tooltip>
+              <v-icon v-if="column.value && isSorted">mdi-arrow-up</v-icon>
 
+              <v-icon v-else-if="column.value && !isSorted"
+                >mdi-arrow-down</v-icon
+              >
               {{ column.value }}
             </template>
 
@@ -694,10 +774,14 @@ async function UploadData() {
                   </v-btn>
                 </template>
                 <span
-                  >Occurencies refers to the existing number of this value</span
+                  >Occurencies refers to the existing amount of this value</span
                 >
               </v-tooltip>
+              <v-icon v-if="column.value && isSorted">mdi-arrow-up</v-icon>
 
+              <v-icon v-else-if="column.value && !isSorted"
+                >mdi-arrow-down</v-icon
+              >
               {{ column.value }}
             </template>
           </v-data-table-server>

@@ -2,7 +2,8 @@
 import { ref } from "vue";
 import router from "../router";
 
-const URL = ref("91.107.192.39");
+//const URL = ref("91.107.192.39");
+const URL = ref ("http://events-logs.loca.lt")
 
 const show1 = ref(false)
 const show2 = ref(false)
