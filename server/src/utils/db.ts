@@ -12,6 +12,11 @@ export class Db {
       database: config.db.database,
       password: config.db.password,
       namedPlaceholders: true,
+      enableKeepAlive: true,
+    });
+    Db.instance.on("close", () => {
+      console.log("Reconnecting to database...");
+      Db.instance.connect();
     });
   }
 

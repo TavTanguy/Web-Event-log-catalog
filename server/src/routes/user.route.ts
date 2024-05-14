@@ -5,6 +5,7 @@ import { Db } from "../utils/db";
 import { object, string } from "yup";
 import { UserAuth, UserInfoAuth } from "../utils/UserAuth";
 import { ErrorApi } from "../utils/ErrorApi";
+import { delay } from "../utils/asyncTools";
 
 const postUserSchema = object({
   username: string().required(),
@@ -55,8 +56,10 @@ async function getToken(req: Request, res: Response) {
 }
 
 async function getTest(req: Request, res: Response) {
-  const userInfo = new UserAuth(req).getUserInfo();
-  response(res, 200, "success", { userInfo });
+  //const userInfo = new UserAuth(req).getUserInfo();
+  res.status(102);
+  await delay(3000);
+  response(res, 200, "success", { test: "ok" });
 }
 
 export function init(router: RouterWithAsync) {
