@@ -23,12 +23,17 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         content_length = int(self.headers['Content-Length'])
         body = self.rfile.read(content_length)
         body = urllib.parse.parse_qs(body.decode('utf-8'))
-        link_global = None
-        if "link_global" in body:
-            link_global = body["linkGlobal"][0]
+        link_global = body.get("linkGlobal")
+        if link_global:
+            link_global = link_global[0]
+        author = body.get("author")
+        if author:
+            author = author[0]
+
+        
 
         print(config["uploadFile"]["path"] + body["path"][0])
-        res = importDataset(config, config["uploadFile"]["path"] + body["path"][0], body["name"][0], link_global)
+        res = importDataset(config, config["uploadFile"]["path"] + body.get("path")[0], body.get("collectionName")[0], body.get("name")[0], link_global, author)
         print(str(res))
         self.send_response(200)
         self.end_headers()

@@ -16,3 +16,5 @@ docker-compose.yaml
 configs/
 __pycache__/
 datasets/
+images/
+importDb.py
