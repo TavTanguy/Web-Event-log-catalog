@@ -2,8 +2,8 @@
 import { nextTick, ref, watch } from "vue";
 import Plotly, { Mapbox } from "plotly.js";
 
-//const URL = ref("http://91.107.192.39");
-const URL = ref("http://events-logs.loca.lt");
+const URL = ref("http://91.107.192.39");
+//const URL = ref("http://events-logs.loca.lt");
 const isSorted = ref(false);
 
 // threshold function
@@ -38,25 +38,25 @@ const searchColl = ref("");
 const loading = ref(false);
 const headers = ref([
   { title: "id", key: "id" },
-  { title: "collectionName", key: "collectionName" },
-  { title: "name", key: "name" },
+  { title: "Collection", key: "collectionName" },
+  { title: "Dataset name", key: "name" },
 
-  { title: "link_global", key: "link_global" },
-  { title: "author", key: "author" },
+  { title: "URL", key: "link_global" },
+  { title: "Author", key: "author" },
 
-  { title: "action", key: "action", sortable: false },
+  { title: "Action", key: "action", sortable: false },
 ]);
 
 // dataset infos
 const datasetinfos = ref([] as any[]);
 const headers4 = ref([
-  { title: "start_activities", key: "start_activities" },
-  { title: "end_activities", key: "end_activities" },
-  { title: "trace_count", key: "trace_count" },
-  { title: "trace_length_mean", key: "trace_length_mean" },
-  { title: "trace_length_min", key: "trace_length_min" },
-  { title: "trace_length_max", key: "trace_length_max" },
-  { title: "trace_length_std", key: "trace_length_std" },
+  { title: "Start of activities", key: "start_activities" },
+  { title: "End of activities", key: "end_activities" },
+  { title: "Number of traces", key: "trace_count" },
+  { title: "Trace length mean", key: "trace_length_mean" },
+  { title: "Trace length min", key: "trace_length_min" },
+  { title: "Trace length max", key: "trace_length_max" },
+  { title: "Trace length standard deviation", key: "trace_length_std" },
 ]);
 
 // attributes
@@ -75,11 +75,11 @@ const minCardinality = ref("0");
 const maxCardinalit = ref("100");
 
 const headers2 = ref([
-  { title: "type", key: "type" },
-  { title: "value_type", key: "value_type" },
-  { title: "name", key: "name" },
-  { title: "cardinality", key: "cardinality" },
-  { title: "details", key: "details", sortable: false },
+  { title: "Type", key: "type" },
+  { title: "Value type", key: "value_type" },
+  { title: "Attribute name", key: "name" },
+  { title: "Cardinality", key: "cardinality" },
+  { title: "Details", key: "details", sortable: false },
 ]);
 const dialogGraph = ref(false);
 
@@ -94,10 +94,11 @@ const totalItems3 = ref("79");
 const dialog2 = ref(false);
 const currentAttributeId = ref(1);
 const currentAttribute = ref("");
+const currentValuetype = ref("")
 
 const headers3 = ref([
-  { title: "value", key: "value" },
-  { title: "occur", key: "occur" },
+  { title: "Value", key: "value" },
+  { title: "Occurences", key: "occur" },
 ]);
 
 // function to update datasets
@@ -130,7 +131,7 @@ async function updateData({ page, sortBy }) {
   items.value = resJson.res.datasets;
   totalItems.value = resJson.res.totalLength;
 
-if (maxCardinalit.value==OldMaxCard) {
+if (maxCardinalit.value==OldMaxCard && resJson.res.maxCardinality) {
 
   maxCardinalit.value = resJson.res.maxCardinality;
 }
@@ -149,6 +150,7 @@ async function updateDataInfos() {
 }
 
 // function to update attributes
+
 let lastParams2: any;
 function updateFilterAtt() {
   return updateAttribute(lastParams2);
@@ -173,11 +175,13 @@ async function updateAttribute({ page, sortBy }, limitAll = false) {
   const resJson = await res.json();
   items2.value = resJson.res.attributes;
   totalItems2.value = resJson.res.totalLength;
+  
   loading2.value = false;
   isSorted.value = !isSorted.value;
 }
 
 // function to update values
+const box=ref("")
 let lastParams3: any;
 function updateFilterValue() {
   return updateValue(lastParams3);
@@ -202,7 +206,16 @@ async function updateValue({ page, sortBy }, limitAll = false) {
   totalItems3.value = resJson.res.totalLength;
   loading3.value = false;
   isSorted.value = !isSorted.value;
+  if (currentValuetype.value!=="string"){
+    box.value="box"
+    console.log(box.value)
 }
+else {
+  box.value=""
+}
+  }
+  
+
 
 // Graph Attributes
 const typegraph = ref("bar");
@@ -287,11 +300,12 @@ function openDialog(datasetId: number, nameDataset: string) {
 }
 
 // Dialogue 2 Values
-function openDialog2(attributeId: number, nameAttribute: string) {
+function openDialog2(attributeId: number, nameAttribute: string, Valuetype: string) {
   dialog2.value = !dialog2.value;
   items3.value = [];
   currentAttributeId.value = attributeId;
   currentAttribute.value = nameAttribute;
+  currentValuetype.value = Valuetype;
 }
 // Dialogue 3 Dataset infos
 const dialog3 = ref(false);
@@ -421,7 +435,7 @@ async function UploadData() {
         transition="dialog-transition"
         ><v-card>
           <v-toolbar>
-            <v-toolbar-title> Upload Dataset </v-toolbar-title>
+            <v-toolbar-title><strong>Upload Dataset</strong>  </v-toolbar-title>
             <v-btn icon="mdi-close-box" @click="openImport"></v-btn>
           </v-toolbar>
 
@@ -609,7 +623,7 @@ async function UploadData() {
 
           <v-icon v-else-if="column.value && !isSorted">mdi-arrow-down</v-icon>
 
-          {{ column.value }}
+          {{ column.title }}
         </div>
       </template>
 
@@ -629,7 +643,7 @@ async function UploadData() {
     <v-dialog v-model="dialog3" max-width="90vw" transition="dialog-transition"
       ><v-card>
         <v-toolbar>
-          <v-toolbar-title> Dataset infos </v-toolbar-title>
+          <v-toolbar-title> <strong>Dataset infos</strong> </v-toolbar-title>
           <v-btn icon="mdi-close-box" @click="openDialog3"></v-btn>
         </v-toolbar>
         <v-data-table-virtual
@@ -646,7 +660,7 @@ async function UploadData() {
     <v-dialog v-model="dialog" max-width="90vw" transition="dialog-transition"
       ><v-card>
         <v-toolbar>
-          <v-toolbar-title> Dataset : {{ currentDataset }} </v-toolbar-title>
+          <v-toolbar-title> <strong>Dataset : {{ currentDataset }}</strong> </v-toolbar-title>
           <v-btn icon="mdi-close-box" @click="openDialog"></v-btn>
         </v-toolbar>
         <v-card-text>
@@ -682,7 +696,7 @@ async function UploadData() {
             <v-select
               v-model="typegraph"
               label="Select graph type"
-              :items="['pie', 'bar', 'markers', 'box']"
+              :items="['pie', 'bar', 'markers']"
               variant="outlined"
             ></v-select>
           </div>
@@ -716,7 +730,7 @@ async function UploadData() {
               <v-icon v-else-if="column.value && !isSorted"
                 >mdi-arrow-down</v-icon
               >
-              {{ column.value }}
+              {{ column.title }}
             </template>
 
             <template v-slot:header.cardinality="{ column }">
@@ -733,13 +747,13 @@ async function UploadData() {
               <v-icon v-else-if="column.value && !isSorted"
                 >mdi-arrow-down</v-icon
               >
-              {{ column.value }}
+              {{ column.title }}
             </template>
 
             <!--Dialog for Values-->
 
             <template v-slot:item.details="{ item }">
-              <v-btn icon @click="openDialog2(item.id, item.name)">...</v-btn>
+              <v-btn icon @click="openDialog2(item.id, item.name, item.value_type)">...</v-btn>
             </template>
           </v-data-table-server>
         </v-card-text>
@@ -748,9 +762,12 @@ async function UploadData() {
     <v-dialog v-model="dialog2" max-width="90vw" transition="dialog-transition"
       ><v-card>
         <v-toolbar>
-          <v-toolbar-title>
-            Attribute : {{ currentAttribute }}
+          
+          <v-toolbar-title  >
+            
+            <strong>Attribute : {{ currentAttribute }}</strong>
           </v-toolbar-title>
+          
           <v-btn icon="mdi-close-box" @click="openDialog2"></v-btn>
         </v-toolbar>
 
@@ -778,8 +795,8 @@ async function UploadData() {
             ></v-btn>
             <v-select
               v-model="typegraph"
-              label="Select graph type"
-              :items="['pie', 'bar', 'markers', 'box']"
+              label="Select graph type" 
+              :items="['pie', 'bar', 'markers', box]"
               variant="outlined"
             ></v-select>
           </div>
@@ -810,7 +827,7 @@ async function UploadData() {
               <v-icon v-else-if="column.value && !isSorted"
                 >mdi-arrow-down</v-icon
               >
-              {{ column.value }}
+              {{ column.title }}
             </template>
 
             <template v-slot:header.occur="{ column }">
@@ -829,7 +846,7 @@ async function UploadData() {
               <v-icon v-else-if="column.value && !isSorted"
                 >mdi-arrow-down</v-icon
               >
-              {{ column.value }}
+              {{ column.title }}
             </template>
           </v-data-table-server>
         </v-card-text>
@@ -844,7 +861,7 @@ async function UploadData() {
       transition="dialog-transition"
       ><v-card>
         <v-toolbar>
-          <v-toolbar-title>{{ currentDataset }} </v-toolbar-title>
+          <v-toolbar-title><strong>{{ currentDataset }}</strong> </v-toolbar-title>
           <v-tooltip v-if="typegraph == 'pie'">
             <template v-slot:activator="{ props }">
               <v-btn icon v-bind="props" density="compact">
@@ -873,7 +890,7 @@ async function UploadData() {
       transition="dialog-transition"
       ><v-card>
         <v-toolbar>
-          <v-toolbar-title>{{ currentAttribute }} </v-toolbar-title>
+          <v-toolbar-title><strong>{{ currentAttribute }} </strong></v-toolbar-title>
           <v-tooltip v-if="typegraph == 'pie'">
             <template v-slot:activator="{ props }">
               <v-btn icon v-bind="props" density="compact">
