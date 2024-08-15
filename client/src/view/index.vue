@@ -101,6 +101,8 @@ const headers3 = ref([
   { title: "Occurences", key: "occur" },
 ]);
 
+
+
 // function to update datasets
 let lastParams: any;
 function updateFilter() {
@@ -125,6 +127,7 @@ async function updateData({ page, sortBy }) {
         maxCardinality: maxCardinalit.value,
         sortBy: sortBy[0].key,
         orderBy: sortBy[0].order.toUpperCase(),
+        
       })
   );
   const resJson = await res.json();
@@ -542,34 +545,34 @@ async function UploadData() {
     <!--Search sections-->
 
     <div class="d-flex">
-      <v-text-field
+      <v-autocomplete
         v-model="searchColl"
         @update:modelValue="updateFilter"
         class="ma-0"
         density="compact"
-        placeholder="Search collection..."
+        label="Search collection..."
         hide-details
       >
-      </v-text-field>
+      </v-autocomplete>
 
-      <v-text-field
+      <v-autocomplete
         v-model="searchName"
         @update:modelValue="updateFilter"
         class="ma-0"
         density="compact"
-        placeholder="Search name..."
+        label="Search name..."
         hide-details
       >
-      </v-text-field>
-      <v-text-field
+      </v-autocomplete>
+      <v-autocomplete
         v-model="searchAtt"
         @update:modelValue="updateFilter"
         class="ma-0"
         density="compact"
-        placeholder="Search attribute..."
+        label="Search attribute..."
         hide-details
       >
-      </v-text-field>
+      </v-autocomplete>
 
       <v-text-field
         type="number"
@@ -580,7 +583,7 @@ async function UploadData() {
         @update:modelValue="updateFilter"
         class="ma-0"
         density="compact"
-        placeholder="Min. Cardinality"
+        label="Min. Cardinality"
         hide-details
       >
       </v-text-field>
@@ -593,7 +596,7 @@ async function UploadData() {
         @update:modelValue="updateFilter"
         class="ma-0"
         density="compact"
-        placeholder="Max. Cardinality"
+        label="Max. Cardinality"
         hide-details
       >
       </v-text-field>
@@ -667,22 +670,22 @@ async function UploadData() {
           <div class="d-flex">
             <!--Search sections-->
 
-            <v-text-field
+            <v-autocomplete
               v-model="searchAtt"
               @update:modelValue="updateFilterAtt"
               class="ma-0"
               density="compact"
-              placeholder="Search type..."
+              label="Search type..."
               hide-details
-            ></v-text-field>
-            <v-text-field
+            ></v-autocomplete>
+            <v-autocomplete
               v-model="searchConcept"
               @update:modelValue="updateFilterAtt"
               class="ma-0"
               density="compact"
-              placeholder="Search name..."
+              label="Search name..."
               hide-details
-            ></v-text-field>
+            ></v-autocomplete>
 
             <!-- Graph options and button-->
 
@@ -775,14 +778,14 @@ async function UploadData() {
 
         <v-card-text>
           <div class="d-flex">
-            <v-text-field
+            <v-autocomplete
               v-model="searchVal"
               @update:modelValue="updateFilterValue"
               class="ma-0"
               density="compact"
-              placeholder="Search value..."
+              label="Search value..."
               hide-details
-            ></v-text-field>
+            ></v-autocomplete>
 
             <!--Graph options and button-->
 
